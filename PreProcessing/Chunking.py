@@ -3,16 +3,16 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import json
 
 # Load the eligible and ineligible RFP PDFs
-eligible_loader = PyPDFLoader("ELIGIBLE RFP - 1.pdf")
-ineligible_loader = PyPDFLoader("IN-ELIGIBLE_RFP.pdf")
+eligible_loader = PyPDFLoader("Dataset\ELIGIBLE RFP - 1.pdf")
+ineligible_loader = PyPDFLoader("Dataset\IN-ELIGIBLE_RFP.pdf")
 
 eligible_documents = eligible_loader.load()
 ineligible_documents = ineligible_loader.load()
 
 # Set up the text splitter
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=300,
-    chunk_overlap=150,
+    chunk_size=2000,
+    chunk_overlap=250,
 )
 
 # Split documents into chunks
@@ -25,7 +25,7 @@ eligible_chunks_json = [
         "chunk_id": i + 1,
         "label": "eligible",
         "content": chunk.page_content,
-        "metadata": chunk.metadata
+        # "metadata": chunk.metadata
     }
     for i, chunk in enumerate(eligible_chunks)
 ]
@@ -35,7 +35,7 @@ ineligible_chunks_json = [
         "chunk_id": i + 1,
         "label": "ineligible",
         "content": chunk.page_content,
-        "metadata": chunk.metadata
+        # "metadata": chunk.metadata
     }
     for i, chunk in enumerate(ineligible_chunks)
 ]
