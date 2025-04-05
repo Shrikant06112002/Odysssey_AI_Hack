@@ -2,14 +2,14 @@ from pinecone import Pinecone, ServerlessSpec
 import time
 import json
 
-pc = Pinecone(api_key="'''")
+pc = Pinecone(api_key="pcsk_4Cr5KT_XZ6PoBC6NP7SRshoatLUkEvAaCkcZa9zJcdCJJnzixiqbb26f5yyWgY7MMo7We")
 
 # Load JSON data from a file
 with open('dataKnow.json', 'r') as file:
     data = json.load(file)
 # Extract content for embedding
 contents = [entry['Content'] for entry in data if 'Content' in entry]
-# print("content: ", contents)
+# print("content: ", contents)  
 index_name = "refdocanalysis"
 
 pc.create_index(
