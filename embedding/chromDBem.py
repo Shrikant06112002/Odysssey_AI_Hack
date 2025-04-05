@@ -1,8 +1,13 @@
 from pinecone import Pinecone, ServerlessSpec
 import time
 import json
+import os
+from dotenv import load_dotenv
 
-pc = Pinecone(api_key="pcsk_4Cr5KT_XZ6PoBC6NP7SRshoatLUkEvAaCkcZa9zJcdCJJnzixiqbb26f5yyWgY7MMo7We")
+load_dotenv()
+pinecone_api_key = os.getenv("PINECONE_API_KEY")
+pc = Pinecone(api_key=pinecone_api_key)
+
 
 # Load JSON data from a file
 with open('dataKnow.json', 'r') as file:
