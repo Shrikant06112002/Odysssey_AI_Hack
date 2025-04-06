@@ -15,10 +15,6 @@ gemani_api_key = os.getenv("API_KEY")
 pc = Pinecone(api_key=pinecone_api_key)
 client = genai.configure(api_key=gemani_api_key)
 
-
-index_name_input = "eligibledocone"  # User uploaded RFP document
-index_input = pc.Index(index_name_input)
-
 # Keywords focused on mandatory eligibility criteria
 ELIGIBILITY_KEYWORDS = [
     "Required",
@@ -37,9 +33,15 @@ ELIGIBILITY_KEYWORDS = [
 ]
 
 def extract_eligibility_criteria(COMPANY_DATA: dict) :
-    # Create keyword query string for better retrieval
-    keyword_query = " ".join(ELIGIBILITY_KEYWORDS)
+    """_summary_
+
+    Args:
+        COMPANY_DATA (dict): _description_
+    """   
     
+    keyword_query = " ".join(ELIGIBILITY_KEYWORDS)
+    index_name_input = "eligibledocone"  # User uploaded RFP document
+    index_input = pc.Index(index_name_input)
     print("🔍 Embedding eligibility criteria query...")
     embedding = pc.inference.embed(
         model="multilingual-e5-large",
@@ -74,39 +76,13 @@ def extract_eligibility_criteria(COMPANY_DATA: dict) :
     prompt_template = PromptTemplate(
         input_variables=["rfp_context", "company_data"],
         template="""
-You are helping to extract all mandatory eligibility criteria from an RFP document.
+Extract eligibility information from this RFP document and format it as JSON:
+Review these RFP document sections: {rfp_context}
+Compare with FirstStaff's information: {company_data}
+Return ONLY this exact JSON format with no additional text:
+{{ "is_eligible": true|false, "checks": [ {{ "area": "Qualification", "passed": true|false, "note": "Brief note (1-2 sentences)" }}, {{ "area": "Experience", "passed": true|false, "note": "Brief note (1-2 sentences)" }}, {{ "area": "Certification", "passed": true|false, "note": "Brief note (1-2 sentences)" }} ], "summary": "One sentence summary" }}
 
-Review these RFP document sections:
-{rfp_context}
-
-Compare with FirstStaff's information:
-{company_data}
-
-TASKS:
-1. Extract ALL mandatory requirements (must-have qualifications, certifications, experience)
-2. For each requirement, check if FirstStaff meets it based on their data
-3. Flag any missing requirements that would prevent eligibility
-
-Focus on phrases like "must have," "required," "minimum," and "mandatory."
-Be practical in assessment - only flag truly missing requirements.
-
-Focus only on phrases like "must have," "required," "minimum," and "mandatory."
-Be practical—flag only truly missing or unmet requirements.
-Return only pure JSON in this exact format—no extra text, headers, or code blocks
-{{
-  "mandatory_criteria": [
-    {{
-      "requirement": "The specific requirement text",
-      "category": "Qualification|Certification|Experience",
-      "has_requirement": true|false,
-      "notes": "Brief note on whether FirstStaff meets this"
-    }}
-  ],
-  "missing_requirements": [
-    "List specific requirements FirstStaff is missing"
-  ],
-  "summary": "Brief summary of eligibility status based on criteria"
-}}
+Focus on mandatory requirements with phrases like "must have," "required," "minimum," and "mandatory."
 """
     )
 
@@ -114,7 +90,8 @@ Return only pure JSON in this exact format—no extra text, headers, or code blo
         rfp_context=rfp_context,
         company_data=company_data_formatted
     )
-
+    index_name = "eligibledocone"  # Single index containing contract documents
+    index = pc.Index(index_name)
     # Run Gemini LLM
     print("🧠 Extracting mandatory eligibility criteria...")
 

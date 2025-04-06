@@ -35,8 +35,6 @@ embeddings = pc.inference.embed(
 print("printing embeddings")
 print(embeddings[0])
 
-
-
 index = pc.Index(index_name)
 
 vectors = []
@@ -59,5 +57,4 @@ index.upsert(
     vectors=vectors,
     namespace="ns"
 )# Wait for the index to be ready
-print("printing describe_index_stats")
-print(index.describe_index_stats())
+

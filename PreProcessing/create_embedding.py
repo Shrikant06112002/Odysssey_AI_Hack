@@ -20,7 +20,7 @@ pc = Pinecone(api_key=pinecone_api_key)
 def generate_embeddings_with_keywords(
     data: List[Dict],
     model: str = "multilingual-e5-large",
-    index_name: str = "eligibledoctwo",
+    index_name: str = "eligibledocone",
     dimension: int = 1024,
     region: str = "us-east-1",
     cloud: str = "aws",

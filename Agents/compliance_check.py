@@ -15,11 +15,6 @@ gemani_api_key = os.getenv("API_KEY")
 pc = Pinecone(api_key=pinecone_api_key)
 client = genai.configure(api_key=gemani_api_key)
 
-
-index_name_input = "eligibledocone"  # User uploaded RFP document
-index_input = pc.Index(index_name_input)
-
-
 # Define checkpoint keywords for compliance checks
 CHECKPOINT_KEYWORDS = [
     "Registration",
@@ -34,7 +29,14 @@ CHECKPOINT_KEYWORDS = [
 ]
 
 def run_compliance_check(COMPANY_DATA: dict ):
-    # Create keyword query string for better retrieval
+    """_summary_
+
+    Args:
+        COMPANY_DATA (dict): _description_
+    """    
+    
+    index_name_input = "eligibledocone"  # User uploaded RFP document
+    index_input = pc.Index(index_name_input)
     keyword_query = " ".join(CHECKPOINT_KEYWORDS)
     
     print("🔍 Embedding compliance query...")
@@ -171,9 +173,4 @@ Note:- Note give any extra out like ```json`` or anything else, just return the 
     # Parse the JSON response
     result = json.loads(content)
     return result
-    # # Parse the JSON response
-    # result = json.loads(response.text)
-    # # print(response.text)
-    # print("✅ Compliance check completed successfully")
-    # # print(response.text)
-    # return response
+

@@ -38,9 +38,15 @@ RISK_KEYWORDS = [
 ]
 
 def analyze_contract_risks(COMPANY_DATA: dict) :
+    """_summary_
+
+    Args:
+        COMPANY_DATA (dict): _description_
+    """    
     # Create keyword query string for better retrieval
     keyword_query = " ".join(RISK_KEYWORDS)
-    
+    index_name = "eligibledocone"  # Single index containing contract documents
+    index = pc.Index(index_name)
     print("🔍 Embedding contract risk query...")
     embedding = pc.inference.embed(
         model="multilingual-e5-large",

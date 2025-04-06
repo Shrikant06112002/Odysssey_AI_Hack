@@ -14,9 +14,9 @@ gemani_api_key = os.getenv("API_KEY")
 pc = Pinecone(api_key=pinecone_api_key)
 client = genai.configure(api_key=gemani_api_key)
 
-# Single index for RFP documents
-index_name = "eligibledocone"
-index = pc.Index(index_name)
+# # Single index for RFP documents
+# index_name = "eligibledocone"
+# index = pc.Index(index_name)
 
 # Keywords focused on submission requirements
 SUBMISSION_KEYWORDS = [
@@ -50,6 +50,8 @@ def generate_submission_checklist():
     """
     Extracts submission requirements from RFP documents and generates a structured checklist
     """
+    index_name = "eligibledocone"
+    index = pc.Index(index_name)
     # Create keyword query string for better retrieval
     keyword_query = " ".join(SUBMISSION_KEYWORDS)
     
@@ -197,7 +199,7 @@ def search_for_templates():
     prompt_template = PromptTemplate(
         input_variables=["template_context"],
         template="""
-Extract information about ALL required templates, forms, and attachments mentioned in these RFP sections:
+Extract information about one required templates, forms, and attachments mentioned in these RFP sections:
 
 {template_context}
 
