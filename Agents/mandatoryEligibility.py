@@ -47,24 +47,28 @@ COMPANY_DATA = {
     "Certificate of Insurance": ""
 }
 
-# Define checkpoint keywords for compliance checks
-CHECKPOINT_KEYWORDS = [
-    "Registration",
-    "Certification",
-    "Experience",
-    "Compliance",
+# Keywords focused on mandatory eligibility criteria
+ELIGIBILITY_KEYWORDS = [
+    "Required",
+    "Mandatory",
+    "Must",
+    "Minimum",
+    "Qualification",
+    "Criteria",
     "Eligibility",
-    "Audit",
-    "Security",
-    "Turnover",
-    "GST"
+    "Prerequisite",
+    "Essential",
+    "Experience",
+    "Certification",
+    "License",
+    "Registration"
 ]
 
-def run_compliance_check():
+def extract_eligibility_criteria():
     # Create keyword query string for better retrieval
-    keyword_query = " ".join(CHECKPOINT_KEYWORDS)
+    keyword_query = " ".join(ELIGIBILITY_KEYWORDS)
     
-    print("🔍 Embedding compliance query...")
+    print("🔍 Embedding eligibility criteria query...")
     embedding = pc.inference.embed(
         model="multilingual-e5-large",
         inputs=[keyword_query],
@@ -73,108 +77,97 @@ def run_compliance_check():
 
     query_vector = embedding[0]['values']
 
-    # Retrieve more chunks from the RFP document to ensure we capture all requirements
-    print("📄 Retrieving relevant RFP sections...")
-    top_pdf_chunks = index_input.query(
+    # Retrieve RFP document sections focused on requirements
+    print("📄 Retrieving eligibility sections from RFP...")
+    eligibility_chunks = index_input.query(
         namespace="ns",
         vector=query_vector,
-        top_k=3,  # Increased to retrieve more relevant sections
+        top_k=3,
         include_values=False,
         include_metadata=True
     )
 
-    # Build pdf context with metadata
-    pdf_context = "\n\n".join([
+    # Build context with metadata
+    rfp_context = "\n\n".join([
         f"Section ID: {match['id']}\n"
         f"Section Title: {match['metadata'].get('Sub Title', 'N/A')}\n"
         f"Content: {match['metadata'].get('chunk', '')}\n"
-        f"Keywords: {match['metadata'].get('keywords', [])}"
-        for match in top_pdf_chunks['matches']
+        for match in eligibility_chunks['matches']
     ])
-    print("PDF Context:")
-    # print(pdf_context)
-
+    
     # Format company data for the prompt
     company_data_formatted = "\n".join([f"{key}: {value}" for key, value in COMPANY_DATA.items()])
     
-    # More focused prompt template for compliance checking
+    # Prompt template focused on eligibility criteria extraction
     prompt_template = PromptTemplate(
-        input_variables=["pdf_context", "company_data"],
-                template="""
-You are doing a quick preliminary check if FirstStaff Workforce Solutions is eligible to bid on an RFP.
+        input_variables=["rfp_context", "company_data"],
+        template="""
+You are helping to extract all mandatory eligibility criteria from an RFP document.
 
-Review these RFP document chunks:
-{pdf_context}
+Review these RFP document sections:
+{rfp_context}
 
-Company information:
+Compare with FirstStaff's information:
 {company_data}
 
-Do a BASIC check for ONLY these 4 items:
-1. Legal registration (state registration)
-2. Basic certifications (DUNS, CAGE, SAM.gov)
-3. Past performance (years of experience)
-4. Any obvious deal-breakers
+TASKS:
+1. Extract ALL mandatory requirements (must-have qualifications, certifications, experience)
+2. For each requirement, check if FirstStaff meets it based on their data
+3. Flag any missing requirements that would prevent eligibility
 
-Be LENIENT in your assessment. If there's any evidence the company meets a requirement or the requirement isn't clearly specified, consider it satisfied.
+Focus on phrases like "must have," "required," "minimum," and "mandatory."
+Be practical in assessment - only flag truly missing requirements.
 
-Return this simple JSON format:
+Return this JSON format:
 {{
-  "is_eligible": true|false,
-  "checks": [
+  "mandatory_criteria": [
     {{
-      "area": "Legal Registration",
-      "passed": true|false,
-      "note": "Brief note (1-2 sentences)"
-    }},
-    {{
-      "area": "Certifications",
-      "passed": true|false,
-      "note": "Brief note (1-2 sentences)"
-    }},
-    {{
-      "area": "Past Performance",
-      "passed": true|false,
-      "note": "Brief note (1-2 sentences)"
-    }},
-    {{
-      "area": "Deal-Breakers",
-      "passed": true|false,
-      "note": "Brief note (1-2 sentences)"
+      "requirement": "The specific requirement text",
+      "category": "Qualification|Certification|Experience|Other",
+      "has_requirement": true|false|unknown,
+      "notes": "Brief note on whether FirstStaff meets this"
     }}
   ],
-  "summary": "One sentence summary"
+  "missing_requirements": [
+    "List specific requirements FirstStaff is missing"
+  ],
+  "summary": "Brief summary of eligibility status based on criteria"
 }}
 """
     )
 
     prompt = prompt_template.format(
-        pdf_context=pdf_context,
+        rfp_context=rfp_context,
         company_data=company_data_formatted
     )
 
-    # Run Gemini LLM with structured output format
-    print("🧠LLM cooking compliance analysis...")
+    # Run Gemini LLM
+    print("🧠 Extracting mandatory eligibility criteria...")
 
     model = GenerativeModel(
         model_name="gemini-1.5-pro-latest",
         generation_config={
-            "temperature": 0.2,  # Lower temperature for more factual output
+            "temperature": 0.3,
             "top_p": 0.95,
-            "max_output_tokens": 1500  # Increased token limit for more detailed analysis
+            "max_output_tokens": 1000
         }
     )
 
     response = model.generate_content(prompt)
     
-    # Parse the JSON response
-    # result = json.loads(response.text)
-    # print(response.text)
-    print("✅ Compliance check completed successfully")
-    return response.text
-
+    try:
+        # Parse the JSON response
+        result = json.loads(response.text)
+        print("✅ Eligibility criteria extraction completed")
+        return result
+    except json.JSONDecodeError:
+        # Handle case where response isn't valid JSON
+        print("⚠️ Could not parse JSON response. Raw output:")
+        print(response.text)
+        return {"error": "Failed to parse response", "raw_response": response.text}
     
 # Example usage
 if __name__ == "__main__":
-    result = run_compliance_check()
+    result = extract_eligibility_criteria()
     
-    print(result)
+    print(json.dumps(result, indent=2))

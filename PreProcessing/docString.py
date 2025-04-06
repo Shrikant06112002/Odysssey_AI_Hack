@@ -38,15 +38,6 @@ def analyze_chunk(client, chunk_data):
             )
             
             prompt = "Summarize this document"
-            # response = client.models.generate_content(
-            # model="gemini-1.5-flash",
-            # contents=[
-            #     types.Part.from_bytes(
-            #         data=doc_data,
-            #         mime_type='application/pdf',
-            #     ),
-            #     prompt])
-            # Construct the prompt for summary generation
             prompt = f"""
             Generate a brief summary (2-3 sentences) of the key information in this text. 
             Return ONLY the summary text, no additional commentary.

@@ -4,7 +4,7 @@ from Agents.compliance_check import run_compliance_check
 import json
 
 if __name__ == "__main__":
-    pdf_path = r"D:/OdysseyCode/Odysssey_AI_Hack/Dataset/ELIGIBLE RFP - 1.pdf"
+    pdf_path = r"D:/OdysseyCode/Odysssey_AI_Hack/Dataset/ELIGIBLE RFP - 2.pdf"
     output_path = "chunked_output.json"
     
     chunks = semantic_chunk_pdf_json(pdf_path)
