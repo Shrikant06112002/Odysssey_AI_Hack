@@ -201,17 +201,18 @@ Extract information about ALL required templates, forms, and attachments mention
 
 {template_context}
 
-Return a JSON array of objects with this format:
-Note:- Note give any extra out like ```json`` or anything else, just return the JSON
+Return only a JSON array of objects — no extra text, no headers, no code blocks.
+Extract details of all templates/forms mentioned in the input.
 [
-  {{
+  {
     "template_name": "The name or identifier of the template/form",
     "purpose": "What this template/form is used for",
     "location": "Where in the RFP this template can be found (section/page/appendix)",
     "format": "The format of the template (Word, Excel, PDF, etc.)",
     "instructions": "Any specific instructions for completing this template"
-  }}
+  }
 ]
+
 
 Only include actual templates/forms/attachments, not general document requirements.
 """
@@ -263,9 +264,8 @@ def generate_printable_checklist(checklist_data):
         template="""
 Convert this JSON checklist data into a well-formatted, user-friendly markdown checklist that can be printed:
 Note:- Note give any extra out like ```json`` or anything else, just return the JSON
-```json
 {checklist_json}
-```
+
 
 Format it as a proper checklist with checkboxes ([ ]) that can be checked off, clear headings, and logical organization.
 Include all the important details but make it concise and practical for proposal teams to use.
@@ -275,7 +275,7 @@ Include all the important details but make it concise and practical for proposal
     prompt = prompt_template.format(checklist_json=json.dumps(checklist_data))
     
     model = GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-1.5-pro-latest",
         generation_config={
             "temperature": 0.1,
             "top_p": 0.9,
@@ -284,36 +284,33 @@ Include all the important details but make it concise and practical for proposal
     )
     
     response = model.generate_content(prompt)
-    if hasattr(response, 'text'):
-                content = response.text
-    elif hasattr(response, 'parts') and len(response.parts) > 0:
-        content = response.parts[0].text
-    else:
-        # Direct access for newer Gemini API versions
-        content = str(response.candidates[0].content.parts[0].text)
+    try:
+   
+        # Extract content from response
+        if hasattr(response, 'text'):
+            content = response.text
+        elif hasattr(response, 'parts') and len(response.parts) > 0:
+            content = response.parts[0].text
+        else:
+            # Direct access for newer Gemini API versions
+            content = str(response.candidates[0].content.parts[0].text)
+
+        # Clean up markdown code block if present
+        if content.startswith("```"):
+            first_newline = content.find("\n")
+            if first_newline != -1:
+                content = content[first_newline + 1:]
             
-        
-    # Clean up the content by removing markdown code block markers
-    # This will remove ```json at the start and ``` at the end
-    if content.startswith("```"):
-        # Find the first newline to skip the ```json line
-        first_newline = content.find("\n")
-        if first_newline != -1:
-            content = content[first_newline + 1:]
-        
-        # Remove the closing ``` if present
-        if content.endswith("```"):
-            content = content[:-3].strip()
-        elif "```" in content:
-            # In case there are trailing characters after the closing ```
-            content = content[:content.rfind("```")].strip()
-        
-        # Parse the JSON response
+            if content.endswith("```"):
+                content = content[:-3].strip()
+            elif "```" in content:
+                content = content[:content.rfind("```")].strip()
+
+        # Parse JSON
         result = json.loads(content)
-        # print("✅ Compliance check completed successfully")
         return result
-    
-    # Parse the JSON response
-    result = json.loads(content)
-    return result
+
+    except Exception as e:
+        return response.text.strip()
+
     

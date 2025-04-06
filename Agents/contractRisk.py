@@ -55,7 +55,7 @@ def analyze_contract_risks(COMPANY_DATA: dict) :
     risk_chunks = index.query(
         namespace="ns",
         vector=query_vector,
-        top_k=8,
+        top_k=3,
         include_values=False,
         include_metadata=True
     )
@@ -92,9 +92,9 @@ TASKS:
 Focus on clauses related to: termination rights, liability limitations, payment terms, IP ownership, 
 indemnification, warranties, and exclusivity requirements.
 
-Return this JSON format, with EXACTLY 2-3 clauses:
-Note:- Note give any extra out like ```json`` or anything else, just return the JSON
-{{
+Return only pure JSON — no code blocks, no markdown, no extra text.
+Identify exactly 3 clauses from the contract that may be biased or disadvantageous to ConsultAdd.
+{{{{ 
   "biased_clauses": [
     {{
       "section_id": "The section ID from the contract",
@@ -109,7 +109,7 @@ Note:- Note give any extra out like ```json`` or anything else, just return the 
     "List of 2-3 highest priority issues that should be addressed first"
   ],
   "overall_assessment": "Brief assessment of the contract's overall balance and key negotiation points"
-}}
+}}}}
 """
     )
 
@@ -122,7 +122,7 @@ Note:- Note give any extra out like ```json`` or anything else, just return the 
     print("🧠 Analyzing contract risks and identifying biased clauses...")
 
     model = GenerativeModel(
-        model_name="gemini-1.5-flash", #gemini-1.5-pro-latest
+        model_name="gemini-1.5-pro-latest", #gemini-1.5-pro-latest
         generation_config={
             "temperature": 0.2,
             "top_p": 0.9,
@@ -212,34 +212,36 @@ Return just the drafted clause text without additional comments.
             "max_output_tokens": 800
         }
     )
-    
     response = model.generate_content(prompt)
-    if hasattr(response, 'text'):
-                content = response.text
-    elif hasattr(response, 'parts') and len(response.parts) > 0:
-        content = response.parts[0].text
-    else:
-        # Direct access for newer Gemini API versions
-        content = str(response.candidates[0].content.parts[0].text)
-            
-        
-    # Clean up the content by removing markdown code block markers
-    # This will remove ```json at the start and ``` at the end
-    if content.startswith("```"):
-        # Find the first newline to skip the ```json line
-        first_newline = content.find("\n")
-        if first_newline != -1:
-            content = content[first_newline + 1:]
-        
-        # Remove the closing ``` if present
-        if content.endswith("```"):
-            content = content[:-3].strip()
-        elif "```" in content:
-            # In case there are trailing characters after the closing ```
-            content = content[:content.rfind("```")].strip()
-        
+    try:
+        # Extract content from response
+        if hasattr(response, 'text'):
+            content = response.text
+        elif hasattr(response, 'parts') and len(response.parts) > 0:
+            content = response.parts[0].text
+        else:
+            # Direct access for newer Gemini API versions
+            content = str(response.candidates[0].content.parts[0].text)
+
+        # Clean up the content by removing markdown code block markers
+        if content.startswith("```"):
+            # Find the first newline to skip the ```json line
+            first_newline = content.find("\n")
+            if first_newline != -1:
+                content = content[first_newline + 1:]
+
+            # Remove the closing ``` if present
+            if content.endswith("```"):
+                content = content[:-3].strip()
+            elif "```" in content:
+                # In case there are trailing characters after the closing ```
+                content = content[:content.rfind("```")].strip()
+
         # Parse the JSON response
         result = json.loads(content)
-        # print("✅ Compliance check completed successfully")
         return result
+
+    except Exception as e:
+        return response.text.strip()
+
     

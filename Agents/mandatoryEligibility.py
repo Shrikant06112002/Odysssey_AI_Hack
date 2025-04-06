@@ -90,14 +90,15 @@ TASKS:
 Focus on phrases like "must have," "required," "minimum," and "mandatory."
 Be practical in assessment - only flag truly missing requirements.
 
-Return this JSON format:
-Note:- Note give any extra out like ```json`` or anything else, just return the JSON
+Focus only on phrases like "must have," "required," "minimum," and "mandatory."
+Be practical—flag only truly missing or unmet requirements.
+Return only pure JSON in this exact format—no extra text, headers, or code blocks
 {{
   "mandatory_criteria": [
     {{
       "requirement": "The specific requirement text",
-      "category": "Qualification|Certification|Experience|Other",
-      "has_requirement": true|false|unknown,
+      "category": "Qualification|Certification|Experience",
+      "has_requirement": true|false,
       "notes": "Brief note on whether FirstStaff meets this"
     }}
   ],
@@ -118,43 +119,42 @@ Note:- Note give any extra out like ```json`` or anything else, just return the 
     print("🧠 Extracting mandatory eligibility criteria...")
 
     model = GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-1.5-pro-latest",
         generation_config={
             "temperature": 0.3,
             "top_p": 0.95,
             "max_output_tokens": 1000
         }
     )
-
     response = model.generate_content(prompt)
-    if hasattr(response, 'text'):
-                content = response.text
-    elif hasattr(response, 'parts') and len(response.parts) > 0:
-        content = response.parts[0].text
-    else:
-        # Direct access for newer Gemini API versions
-        content = str(response.candidates[0].content.parts[0].text)
-            
-        
+    try:
+        if hasattr(response, 'text'):
+            content = response.text
+        elif hasattr(response, 'parts') and len(response.parts) > 0:
+            content = response.parts[0].text
+        else:
+            # Direct access for newer Gemini API versions
+            content = str(response.candidates[0].content.parts[0].text)
+
         # Clean up the content by removing markdown code block markers
-        # This will remove ```json at the start and ``` at the end
-    if content.startswith("```"):
-        # Find the first newline to skip the ```json line
-        first_newline = content.find("\n")
-        if first_newline != -1:
-            content = content[first_newline + 1:]
-        
-        # Remove the closing ``` if present
-        if content.endswith("```"):
-            content = content[:-3].strip()
-        elif "```" in content:
-            # In case there are trailing characters after the closing ```
-            content = content[:content.rfind("```")].strip()
-        
+        if content.startswith("```"):
+            # Find the first newline to skip the ```json line
+            first_newline = content.find("\n")
+            if first_newline != -1:
+                content = content[first_newline + 1:]
+            
+            # Remove the closing ``` if present
+            if content.endswith("```"):
+                content = content[:-3].strip()
+            elif "```" in content:
+                # In case there are trailing characters after the closing ```
+                content = content[:content.rfind("```")].strip()
+
         # Parse the JSON response
         result = json.loads(content)
-        # print("✅ Compliance check completed successfully")
         return result
+    except Exception as e:
+        return response.text.strip()
         
 
     

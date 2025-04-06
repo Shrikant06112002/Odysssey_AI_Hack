@@ -130,9 +130,9 @@ Note:- Note give any extra out like ```json`` or anything else, just return the 
     print("🧠LLM cooking compliance analysis...")
 
     model = GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-1.5-pro-latest",
         generation_config={
-            "temperature": 0.2,  # Lower temperature for more factual output
+            "temperature": 0.3,  # Lower temperature for more factual output
             "top_p": 0.95,
             "max_output_tokens": 1500  # Increased token limit for more detailed analysis
         }
