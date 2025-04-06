@@ -15,37 +15,9 @@ gemani_api_key = os.getenv("API_KEY")
 pc = Pinecone(api_key=pinecone_api_key)
 client = genai.configure(api_key=gemani_api_key)
 
-# Load your vector databases
-index_name_ref = "refdocanalysis"  # Knowledge base with compliance info
-index_knowledge = pc.Index(index_name_ref)
 
-index_name_input = "userdocindex"  # User uploaded RFP document
+index_name_input = "eligibledocone"  # User uploaded RFP document
 index_input = pc.Index(index_name_input)
-
-# Define company data
-COMPANY_DATA = {
-    "Company Legal Name": "FirstStaff Workforce Solutions, LLC",
-    "Principal Business Address": "3105 Maple Avenue, Suite 1200, Dallas, TX 75201",
-    "Phone Number": "(214) 832-4455",
-    "Fax Number": "(214) 832-4460",
-    "Email Address": "proposals@firststaffsolutions.com",
-    "Authorized Representative": "Meredith Chan, Director of Contracts",
-    "Authorized Representative Phone": "(212) 555-0199",
-    "Signature": "Meredith Chan (signed manually)",
-    "Company Length of Existence": "9 years",
-    "Years of Experience in Temporary Staffing": "7 years",
-    "DUNS Number": "07-842-1490",
-    "CAGE Code": "8J4T7",
-    "SAM.gov Registration Date": "03/01/2022",
-    "NAICS Codes": "561320 – Temporary Help Services; 541611 – Admin Management",
-    "State of Incorporation": "Delaware",
-    "Bank Letter of Creditworthiness": "Not Available",
-    "State Registration Number": "SRN-DE-0923847",
-    "Services Provided": "Administrative, IT, Legal & Credentialing Staffing",
-    "Business Structure": "Limited Liability Company (LLC)",
-    "W-9 Form": "Attached (TIN: 47-6392011)",
-    "Certificate of Insurance": ""
-}
 
 # Keywords focused on mandatory eligibility criteria
 ELIGIBILITY_KEYWORDS = [
@@ -64,7 +36,7 @@ ELIGIBILITY_KEYWORDS = [
     "Registration"
 ]
 
-def extract_eligibility_criteria():
+def extract_eligibility_criteria(COMPANY_DATA: dict) :
     # Create keyword query string for better retrieval
     keyword_query = " ".join(ELIGIBILITY_KEYWORDS)
     
@@ -119,6 +91,7 @@ Focus on phrases like "must have," "required," "minimum," and "mandatory."
 Be practical in assessment - only flag truly missing requirements.
 
 Return this JSON format:
+Note:- Note give any extra out like ```json`` or anything else, just return the JSON
 {{
   "mandatory_criteria": [
     {{
@@ -145,7 +118,7 @@ Return this JSON format:
     print("🧠 Extracting mandatory eligibility criteria...")
 
     model = GenerativeModel(
-        model_name="gemini-1.5-pro-latest",
+        model_name="gemini-1.5-flash",
         generation_config={
             "temperature": 0.3,
             "top_p": 0.95,
@@ -154,20 +127,34 @@ Return this JSON format:
     )
 
     response = model.generate_content(prompt)
-    
-    try:
+    if hasattr(response, 'text'):
+                content = response.text
+    elif hasattr(response, 'parts') and len(response.parts) > 0:
+        content = response.parts[0].text
+    else:
+        # Direct access for newer Gemini API versions
+        content = str(response.candidates[0].content.parts[0].text)
+            
+        
+        # Clean up the content by removing markdown code block markers
+        # This will remove ```json at the start and ``` at the end
+    if content.startswith("```"):
+        # Find the first newline to skip the ```json line
+        first_newline = content.find("\n")
+        if first_newline != -1:
+            content = content[first_newline + 1:]
+        
+        # Remove the closing ``` if present
+        if content.endswith("```"):
+            content = content[:-3].strip()
+        elif "```" in content:
+            # In case there are trailing characters after the closing ```
+            content = content[:content.rfind("```")].strip()
+        
         # Parse the JSON response
-        result = json.loads(response.text)
-        print("✅ Eligibility criteria extraction completed")
+        result = json.loads(content)
+        # print("✅ Compliance check completed successfully")
         return result
-    except json.JSONDecodeError:
-        # Handle case where response isn't valid JSON
-        print("⚠️ Could not parse JSON response. Raw output:")
-        print(response.text)
-        return {"error": "Failed to parse response", "raw_response": response.text}
+        
+
     
-# Example usage
-if __name__ == "__main__":
-    result = extract_eligibility_criteria()
-    
-    print(json.dumps(result, indent=2))
