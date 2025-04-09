@@ -38,8 +38,8 @@ Manual RFP analysis is often time-consuming, error-prone, and inconsistent. RFP-
 ## 🧠 Technical Architecture
 
 - **Frontend:** streamlit 
-- **Backend:** Python   
-- **AI/ML:** LLMs, RAG using Pinecone vector database, Agentic AI  
+- **Backend:** Python, Langchain
+- **AI/ML:** LLMs, RAG using Pinecone vector database, Agentic AI, Gemini 
 - **Workflow Management:** Agentic system with specialized agents for each analysis task
 
 ---
